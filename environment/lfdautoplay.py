@@ -525,12 +525,20 @@ while running:
         if autoplay_frame_count % HOLD_FRAMES == 0:
             with torch.no_grad():
                 state_t = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
+                # logits = policy(state_t)
+                # logits = invalid_actions(logits, on_ladder_ranged, on_bridge)
+                # held_action = logits.argmax(dim=1).item()
+                # probs = torch.softmax(logits, dim=1)
                 logits = policy(state_t)
                 logits = invalid_actions(logits, on_ladder_ranged, on_bridge)
-                held_action = logits.argmax(dim=1).item()
-                # probs = torch.softmax(logits, dim=1)
-                # print("probs:", probs.cpu().numpy().round(3))
-                # print("action:", held_action)
+                temperature = 0.6
+                probs = torch.softmax(logits / temperature, dim=1)
+
+                distribution = torch.distributions.Categorical(probs)
+                held_action = distribution.sample().item()
+
+                print("probs:", probs.cpu().numpy().round(3))
+                print("action:", held_action)
         autoplay_frame_count += 1
         action = held_action
     else:
